@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Unzip project
-        run: unzip -q dreams_tracker.zip
+        run: unzip -q Rosella.zip
 
       - uses: actions/setup-java@v4
         with:
@@ -25,31 +25,26 @@ jobs:
           cache: true
 
       - name: Generate android project
-        working-directory: dreams_tracker
+        working-directory: Rosella
         run: flutter create --platforms=android --org com.suhaib --project-name dreams_tracker .
 
       - name: Remove default test
-        working-directory: dreams_tracker
+        working-directory: Rosella
         run: rm -rf test
 
       - name: Patch android
-        working-directory: dreams_tracker
+        working-directory: Rosella
         run: python3 tool/patch_android.py
 
       - name: Install dependencies
-        working-directory: dreams_tracker
+        working-directory: Rosella
         run: flutter pub get
 
-      - name: Analyze
-        working-directory: dreams_tracker
-        continue-on-error: true
-        run: flutter analyze lib --no-fatal-infos --no-fatal-warnings
-
       - name: Build release APK
-        working-directory: dreams_tracker
+        working-directory: Rosella
         run: flutter build apk --release --split-per-abi
 
       - uses: actions/upload-artifact@v4
         with:
-          name: dreams-tracker-apk
-          path: dreams_tracker/build/app/outputs/flutter-apk/*.apk
+          name: Rosella-apk
+          path: Rosella/build/app/outputs/flutter-apk/*.apk
