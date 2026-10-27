@@ -1,0 +1,50 @@
+name: Build Android APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: unzip -q dreams_tracker.zip
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate android project
+        working-directory: dreams_tracker
+        run: flutter create --platforms=android --org com.suhaib --project-name dreams_tracker .
+
+      - name: Patch android
+        working-directory: dreams_tracker
+        run: python3 tool/patch_android.py
+
+      - name: Install dependencies
+        working-directory: dreams_tracker
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: dreams_tracker
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build release APK
+        working-directory: dreams_tracker
+        run: flutter build apk --release --split-per-abi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dreams-tracker-apk
+          path: dreams_tracker/build/app/outputs/flutter-apk/*.apk
