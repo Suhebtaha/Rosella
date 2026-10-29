@@ -2,7 +2,11 @@ name: Build Android APK
 
 on:
   push:
+    branches: [main, master]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -44,7 +48,10 @@ jobs:
         working-directory: Rosella
         run: flutter build apk --release
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Rosella-apk
-          path: Rosella/build/app/outputs/flutter-apk/*.apk
+      - name: Publish APK as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp Rosella/build/app/outputs/flutter-apk/app-release.apk Rosella.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest Rosella.apk --title "Rosella" --notes "Latest build"ص
