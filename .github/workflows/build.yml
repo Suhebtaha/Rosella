@@ -46,12 +46,12 @@ jobs:
 
       - name: Build release APK
         working-directory: Rosella
-        run: flutter build apk --release
+        run: ؤ
 
       - name: Publish APK as a release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
+        run: |flutter build apk --release --dart-define=GEMINI_KEY=${{ secrets.GEMINI_KEY }}
           cp Rosella/build/app/outputs/flutter-apk/app-release.apk Rosella.apk
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest Rosella.apk --title "Rosella" --notes "Latest build"ص
