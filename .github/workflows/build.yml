@@ -28,10 +28,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Restore signing key
+      - name: Restore and verify signing key
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
-        run: echo "$KEYSTORE_B64" | base64 -d > Rosella/tool/rosella.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | tr -d '[:space:]' | base64 -d > Rosella/tool/rosella.jks
+          PW=$(echo -n "$KEYSTORE_PASSWORD" | tr -d '[:space:]')
+          keytool -list -keystore Rosella/tool/rosella.jks -storepass "$PW" | tail -3
 
       - name: Generate android project
         working-directory: Rosella
@@ -55,8 +59,10 @@ jobs:
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT }}
           CF_TOKEN: ${{ secrets.CF_TOKEN }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: flutter build apk --release --dart-define=GEMINI_KEY=$GEMINI_KEY --dart-define=CF_ACCOUNT=$CF_ACCOUNT --dart-define=CF_TOKEN=$CF_TOKEN
+          RAW_PW: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          export KEYSTORE_PASSWORD=$(echo -n "$RAW_PW" | tr -d '[:space:]')
+          flutter build apk --release --dart-define=GEMINI_KEY=$GEMINI_KEY --dart-define=CF_ACCOUNT=$CF_ACCOUNT --dart-define=CF_TOKEN=$CF_TOKEN
 
       - name: Publish APK as a release
         env:
