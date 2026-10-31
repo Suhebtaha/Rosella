@@ -48,7 +48,9 @@ jobs:
         working-directory: Rosella
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
-        run: flutter build apk --release --dart-define=GEMINI_KEY=$GEMINI_KEY
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT }}
+          CF_TOKEN: ${{ secrets.CF_TOKEN }}
+        run: flutter build apk --release --dart-define=GEMINI_KEY=$GEMINI_KEY --dart-define=CF_ACCOUNT=$CF_ACCOUNT --dart-define=CF_TOKEN=$CF_TOKEN
 
       - name: Publish APK as a release
         env:
@@ -56,4 +58,4 @@ jobs:
         run: |
           cp Rosella/build/app/outputs/flutter-apk/app-release.apk Rosella.apk
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Rosella.apk --title "Rosella" --notes "Latest build"
+          gh release create latest Rosella.apk --title "Rosella" --notes "Latest build"ئ
