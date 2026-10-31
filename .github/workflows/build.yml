@@ -28,6 +28,11 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: echo "$KEYSTORE_B64" | base64 -d > Rosella/tool/rosella.jks
+
       - name: Generate android project
         working-directory: Rosella
         run: flutter create --platforms=android --org com.suhaib --project-name dreams_tracker .
@@ -50,6 +55,7 @@ jobs:
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT }}
           CF_TOKEN: ${{ secrets.CF_TOKEN }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: flutter build apk --release --dart-define=GEMINI_KEY=$GEMINI_KEY --dart-define=CF_ACCOUNT=$CF_ACCOUNT --dart-define=CF_TOKEN=$CF_TOKEN
 
       - name: Publish APK as a release
@@ -58,4 +64,4 @@ jobs:
         run: |
           cp Rosella/build/app/outputs/flutter-apk/app-release.apk Rosella.apk
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Rosella.apk --title "Rosella" --notes "Latest build"ئ
+          gh release create latest Rosella.apk --title "Rosella" --notes "Latest build"
