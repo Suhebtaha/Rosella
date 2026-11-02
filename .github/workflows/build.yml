@@ -9,6 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -60,12 +62,19 @@ jobs:
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: >
-          flutter build apk --release --split-per-abi
+          flutter build apk --release --target-platform android-arm64
           --dart-define=GEMINI_KEY=${{ secrets.GEMINI_KEY }}
           --dart-define=CF_ACCOUNT=${{ secrets.CF_ACCOUNT }}
           --dart-define=CF_TOKEN=${{ secrets.CF_TOKEN }}
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Rosella-apk
-          path: build/app/outputs/flutter-apk/*.apk
+      - name: Publish release (one ready-to-install APK)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          TAG="v$VER"
+          cp build/app/outputs/flutter-apk/app-release.apk "Rosella-$VER.apk"
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "Rosella-$VER.apk" \
+            --title "Rosella $VER" \
+            --notes "Download Rosella-$VER.apk below and install it."
