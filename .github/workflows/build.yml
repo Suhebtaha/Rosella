@@ -5,9 +5,6 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,8 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unzip project
-        run: unzip -q Rosella.zip
+      - name: Unpack uploaded zip (if any)
+        run: |
+          for z in *.zip; do
+            [ -f "$z" ] || continue
+            rm -rf /tmp/unz && mkdir -p /tmp/unz
+            unzip -qo "$z" -d /tmp/unz
+            src=$(find /tmp/unz -maxdepth 3 -name pubspec.yaml -printf '%h\n' | head -1)
+            if [ -n "$src" ]; then
+              cp -a "$src"/. .
+              echo "Unpacked $z"
+            fi
+            break
+          done
 
       - uses: actions/setup-java@v4
         with:
@@ -28,46 +36,22 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Restore and verify signing key
-        env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: |
-          echo "$KEYSTORE_B64" | tr -d '[:space:]' | base64 -d > Rosella/tool/rosella.jks
-          PW=$(echo -n "$KEYSTORE_PASSWORD" | tr -d '[:space:]')
-          keytool -list -keystore Rosella/tool/rosella.jks -storepass "$PW" | tail -3
-
       - name: Generate android project
-        working-directory: Rosella
         run: flutter create --platforms=android --org com.suhaib --project-name dreams_tracker .
 
-      - name: Remove default test
-        working-directory: Rosella
-        run: rm -rf test
-
-      - name: Patch android
-        working-directory: Rosella
+      - name: Patch android (permissions, biometrics, minSdk)
         run: python3 tool/patch_android.py
 
       - name: Install dependencies
-        working-directory: Rosella
         run: flutter pub get
 
-      - name: Build release APK
-        working-directory: Rosella
-        env:
-          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT }}
-          CF_TOKEN: ${{ secrets.CF_TOKEN }}
-          RAW_PW: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: |
-          export KEYSTORE_PASSWORD=$(echo -n "$RAW_PW" | tr -d '[:space:]')
-          flutter build apk --release --dart-define=GEMINI_KEY=$GEMINI_KEY --dart-define=CF_ACCOUNT=$CF_ACCOUNT --dart-define=CF_TOKEN=$CF_TOKEN
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      - name: Publish APK as a release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          cp Rosella/build/app/outputs/flutter-apk/app-release.apk Rosella.apk
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Rosella.apk --title "Rosella" --notes "Latest build"
+      - name: Build release APK
+        run: flutter build apk --release --split-per-abi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dreams-tracker-apk
+          path: build/app/outputs/flutter-apk/*.apk
