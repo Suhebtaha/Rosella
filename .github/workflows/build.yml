@@ -58,4 +58,3 @@ jobs:
         with:
           name: dreams-tracker-apk
           path: build/app/outputs/flutter-apk/*.apk
-ؤ
