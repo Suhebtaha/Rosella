@@ -14,19 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unpack uploaded zip (if any)
+      - name: Unpack the newest uploaded zip (highest app version)
         run: |
+          best=""; bestv="0"
           for z in *.zip; do
             [ -f "$z" ] || continue
-            rm -rf /tmp/unz && mkdir -p /tmp/unz
-            unzip -qo "$z" -d /tmp/unz
-            src=$(find /tmp/unz -maxdepth 3 -name pubspec.yaml -printf '%h\n' | head -1)
-            if [ -n "$src" ]; then
-              cp -a "$src"/. .
-              echo "Unpacked $z"
-            fi
-            break
+            v=$(unzip -p "$z" '*pubspec.yaml' 2>/dev/null | grep -m1 '^version:' | sed 's/version: *//; s/+.*//')
+            [ -n "$v" ] || continue
+            if [ "$(printf '%s\n%s\n' "$bestv" "$v" | sort -V | tail -1)" = "$v" ]; then best="$z"; bestv="$v"; fi
           done
+          if [ -n "$best" ]; then
+            rm -rf /tmp/unz && mkdir -p /tmp/unz
+            unzip -qo "$best" -d /tmp/unz
+            src=$(find /tmp/unz -maxdepth 3 -name pubspec.yaml -printf '%h\n' | head -1)
+            [ -n "$src" ] && cp -a "$src"/. . && echo "Unpacked $best (version $bestv)"
+          fi
 
       - uses: actions/setup-java@v4
         with:
