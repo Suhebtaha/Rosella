@@ -69,6 +69,7 @@ jobs:
           --dart-define=CF_ACCOUNT=${{ secrets.CF_ACCOUNT }}
           --dart-define=CF_TOKEN=${{ secrets.CF_TOKEN }}
           --dart-define=ELEVEN_KEY=${{ secrets.ELEVEN_KEY }}
+          --dart-define=KURDISH_KEY=${{ secrets.KURDISH_KEY }}
 
       - name: Publish release (one ready-to-install APK)
         env:
