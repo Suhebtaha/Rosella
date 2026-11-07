@@ -78,6 +78,13 @@ jobs:
           TAG="v$VER"
           cp build/app/outputs/flutter-apk/app-release.apk "Rosella-$VER.apk"
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" "Rosella-$VER.apk" \
-            --title "Rosella $VER" \
-            --notes "Download Rosella-$VER.apk below and install it."
+          # the app shows these notes in its update sheet ("What changed")
+          if [ -f RELEASE_NOTES.md ]; then
+            gh release create "$TAG" "Rosella-$VER.apk" \
+              --title "Rosella $VER" \
+              --notes-file RELEASE_NOTES.md
+          else
+            gh release create "$TAG" "Rosella-$VER.apk" \
+              --title "Rosella $VER" \
+              --notes "- Bug fixes and improvements"
+          fi
