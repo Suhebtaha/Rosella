@@ -30,6 +30,21 @@ jobs:
             [ -n "$src" ] && cp -a "$src"/. . && echo "Unpacked $best (version $bestv)"
           fi
 
+      - name: Restore unchanged sounds from an older zip (so new uploads can be small)
+        run: |
+          if [ -z "$(ls -A assets/sounds 2>/dev/null)" ]; then
+            for z in $(ls *.zip 2>/dev/null | sort -V -r); do
+              if unzip -l "$z" 2>/dev/null | grep -q 'assets/sounds/rain.ogg'; then
+                rm -rf /tmp/snd && mkdir -p /tmp/snd
+                unzip -qo "$z" '*assets/sounds/*' -d /tmp/snd
+                d=$(find /tmp/snd -type d -path '*assets/sounds' | head -1)
+                if [ -n "$d" ]; then
+                  mkdir -p assets/sounds && cp -a "$d"/. assets/sounds/ && echo "Sounds restored from $z" && break
+                fi
+              fi
+            done
+          fi
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
